@@ -16,33 +16,43 @@ const FloatingNav = () => {
   const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
+    let ticking = false; // PERFORMANCE LOCK
+
     const handleScroll = () => {
-      setIsVisible(window.scrollY > 300);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsVisible(window.scrollY > 300);
 
-      const viewportCenter = window.innerHeight / 2;
-      let closestSection = 'home';
-      let minDistance = Infinity;
+          const viewportCenter = window.innerHeight / 2;
+          let closestSection = 'home';
+          let minDistance = Infinity;
 
-      navItems.forEach((item) => {
-        item.possibleIds.forEach((id) => {
-          const element = document.getElementById(id);
-          if (element) {
-            const rect = element.getBoundingClientRect();
-            const sectionCenter = rect.top + rect.height / 2;
-            const distance = Math.abs(sectionCenter - viewportCenter);
+          navItems.forEach((item) => {
+            item.possibleIds.forEach((id) => {
+              const element = document.getElementById(id);
+              if (element) {
+                const rect = element.getBoundingClientRect();
+                // Only measure if element is near viewport to save CPU
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                  const sectionCenter = rect.top + rect.height / 2;
+                  const distance = Math.abs(sectionCenter - viewportCenter);
+                  if (distance < minDistance) {
+                    minDistance = distance;
+                    closestSection = item.label.toLowerCase();
+                  }
+                }
+              }
+            });
+          });
 
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestSection = item.label.toLowerCase();
-            }
-          }
+          setActiveSection(closestSection);
+          ticking = false;
         });
-      });
-      setActiveSection(closestSection);
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -74,11 +84,12 @@ const FloatingNav = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          style={{ willChange: "transform, opacity" }}
         >
           {/* Main Container: Elegant Rectangular Morph Glass */}
           <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 px-1 py-1 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)]">
             
-            {/* Corner Accents (The "Morph" feel) */}
+            {/* Corner Accents */}
             <div className="absolute -top-[1px] -left-[1px] w-2 h-2 border-t border-l border-[#C5A059]/50" />
             <div className="absolute -bottom-[1px] -right-[1px] w-2 h-2 border-b border-r border-[#C5A059]/50" />
 
@@ -90,7 +101,7 @@ const FloatingNav = () => {
                   onClick={(e) => scrollToSection(e, item.label)}
                   className="relative px-6 py-3 transition-all duration-500 group overflow-hidden"
                 >
-                  {/* Active Background: Dark Glass Reveal */}
+                  {/* Active Background */}
                   {isActive && (
                     <motion.div
                       layoutId="activeLuxuryRect"
@@ -99,7 +110,7 @@ const FloatingNav = () => {
                     />
                   )}
 
-                  {/* Active Underline Scanline */}
+                  {/* Active Underline */}
                   {isActive && (
                     <motion.div 
                       layoutId="activeUnderline"
@@ -117,14 +128,13 @@ const FloatingNav = () => {
               );
             })}
             
-            {/* The "Hire Me" High-Contrast Block */}
+            {/* Contact Button */}
             <motion.button
               onClick={(e) => scrollToSection(e, 'Contact')}
               className="relative ml-2 px-8 py-3 bg-[#C5A059] group overflow-hidden"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              {/* Internal Hover Effect */}
               <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
               <span className="relative z-10 font-mono text-[10px] font-bold text-black group-hover:text-[#C5A059] uppercase tracking-[0.3em]">
                 Contact
