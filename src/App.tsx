@@ -3,30 +3,35 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ReactLenis } from '@studio-freight/react-lenis'; // Smooth Scroll
+import { LazyMotion, domMax } from "framer-motion"; // Performance optimization
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Optimized QueryClient to reduce background noise during animations
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      
-      <BrowserRouter>
-        {/* The Smooth Scroll Wrapper - Wraps the entire visible page content */}
-        <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
+    {/* LazyMotion wraps the app so animation features are loaded only when needed */}
+    <LazyMotion features={domMax} strict>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </ReactLenis>
-      </BrowserRouter>
-
-    </TooltipProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </LazyMotion>
   </QueryClientProvider>
 );
 
